@@ -54,58 +54,70 @@ namespace Project.Controllers
             await _context.SaveChangesAsync();
             return Ok("The user has been created successfully. ");
         }
-        //[HttpPost("Login")]
-        //public async Task<IActionResult> Login(UserLoginDTO request)
-        //{
-        //    var user = await _context.Users.FirstOrDefaultAsync(y => y.Email == request.Email);
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login(UserLoginDTO request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(y => y.Email == request.Email);
 
-        //    if (user is null || !BCrypt.Net.BCrypt.Verify(request.password, user.passwordHashed))
-        //        return BadRequest("The user does not exist, or the password is incorrect. ");
+            if (user is null || !BCrypt.Net.BCrypt.Verify(request.password, user.passwordHashed))
+                return BadRequest("The user does not exist, or the password is incorrect. ");
 
-        //    string token = CreateToken(user);
+            string token = CreateToken(user);
 
-        //    return Ok(new { token = token });
-        //}
+            return Ok(new { token = token });
+        }
         //edit userName  xxxx
-        //public async Task<IActionResult> forgotPassword(request)
-        //{
+        [HttpGet("forgotPassword")]
+        public async Task<IActionResult> forgotPassword(UserRegisterDTO request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync( z => z.Email == request.email);
 
-        //}
+            if (user is null)
+                return BadRequest("This email does not exist. ");
 
-        //private string CreateToken(User user)
-        //{
-            //Statements about the user (id, name ,etc...)
+            string newPasswordHashed = BCrypt.Net.BCrypt.HashPassword(request.password);
+
+            user.passwordHashed = newPasswordHashed;
+
+            //_context.Users.Add(user);
+            //await _context.SaveChangesAsync();
+            return Ok("Email has been changed succesfully. ");
+        }
+
+        private string CreateToken(User user)
+        {
+            //Statements about the user(id, name , etc...)
             /*
              *                  دي البيانات الي هتتشفر لما تتحول و تتبعت
              *                  على شكل 
              *                     JSON
              *                     هل التوكين بتتغير لما باجي في اليوم التاسع ولا لأ؟؟؟؟؟؟
              */
-        //    var claims = new List<Claim>
-        //    {
-        //        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        //        new Claim(ClaimTypes.Name, user.Name)
-        //    };
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Name)
+            };
 
 
-        //    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-        //        _configuration.GetSection("AppSettings:Token").Value!));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                _configuration.GetSection("AppSettings:Token").Value!));
 
-        //    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
-        //    var tokenDecriptor = new SecurityTokenDescriptor
-        //    {
-        //        Subject = new ClaimsIdentity(claims),
-        //        Expires = DateTime.Now.AddDays(14),
-        //        SigningCredentials = creds
-        //    };
+            var tokenDecriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.Now.AddDays(14),
+                SigningCredentials = creds
+            };
 
-        //    var tokenHandler = new JwtSecurityTokenHandler();
-        //    var token = tokenHandler.CreateToken(tokenDecriptor);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDecriptor);
 
-        //    return tokenHandler.WriteToken(token);
+            return tokenHandler.WriteToken(token);
 
-        //}
+        }
     }
 }
 
