@@ -1,115 +1,87 @@
-FitTrack 💪
-A modern web application for building workout routines, logging training sessions, and tracking your fitness progress. This project was developed as part of our Software Engineering course, built by a team of junior Computer Science students.
+# CoreX Fitness API 💪
 
-Our goal was to create a full-stack application with a clear separation between a robust backend API and an interactive, user-friendly frontend.
+A robust backend Web API for the **CoreX Fitness** platform. This project serves as the server-side foundation for building workout routines, managing user identities, and tracking fitness progress.
 
-✨ Key Features
-👤 User Authentication: Secure registration and login system to keep user data private and personalized.
+Built using **.NET 9** and **Entity Framework Core**, this API ensures secure and efficient data handling for the CoreX ecosystem.
 
-📚 Customizable Exercise Library: Comes pre-loaded with common exercises, but users can add their own custom movements to the library.
+## ✨ Current Features
 
-📅 Workout Routine Builder: Easily create, view, update, and delete custom workout plans (e.g., "Push Day", "Leg Day", "Full Body").
+### 👤 User Authentication & Security
+*   **Secure Registration:** User account creation with `BCrypt` password hashing.
+*   **JWT Authorization:** Secure Login system issuing JSON Web Tokens (JWT) for stateless authentication.
+*   **Password Management:** Functionality to handle password resets/updates.
+*   **User Management:** Dedicated database schema for storing user profiles and credentials.
 
-✍️ Detailed Session Logging: Log every workout session. For strength exercises, track sets, reps, and weight. For cardio, track distance and duration.
+### 🔌 API Infrastructure
+*   **Swagger UI:** Interactive API documentation available for testing endpoints directly in the browser.
+*   **SQL Server Integration:** Fully configured Entity Framework Core context for SQL Server.
 
-📈 Progress Visualization: The core of the application! Select any exercise and view a dynamic line chart that visualizes your performance and progress over time.
+## 🛠️ Technology Stack
 
-🛠️ Technology Stack
-This project is built using a modern technology stack:
+This project is built using the latest Microsoft technologies:
 
-Backend:
+*   **Framework:** .NET 9 (ASP.NET Core Web API)
+*   **Database:** SQL Server
+*   **ORM:** Entity Framework Core 9
+*   **Authentication:** JWT (JSON Web Tokens) & BCrypt.Net
+*   **Documentation:** Swagger / OpenAPI
 
-Framework: .NET 8 (ASP.NET Core Web API)
+## 🚀 Getting Started
 
-Database: SQL Server
+Follow these instructions to get the backend API running on your local machine.
 
-ORM: Entity Framework Core
+### Prerequisites
+*   [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
+*   [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (or any SQL Server instance)
+*   Visual Studio 2022 or VS Code
 
-Authentication: JWT (JSON Web Tokens)
+### Installation & Setup
 
-Frontend:
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/YousefAliMLS/CoreX-Fitness.git
+    ```
 
-Framework: React (or your chosen framework like Angular/Vue)
+2.  **Navigate to the project directory**
+    ```bash
+    cd CoreX-Fitness/Project
+    ```
 
-Styling: CSS Modules / Tailwind CSS (or your choice)
+3.  **Configure Database**
+    *   Open `appsettings.json`.
+    *   Update the `DefaultConnection` string if your SQL Server instance name is different from `Yousef-PC`.
+    ```json
+    "ConnectionStrings": {
+      "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=CoreXDataBase;Trusted_Connection=True;TrustServerCertificate=True;"
+    }
+    ```
 
-API Communication: Axios
+4.  **Apply Migrations**
+    Create the database and tables using Entity Framework:
+    ```bash
+    dotnet ef database update
+    ```
 
-Charting: Chart.js or Recharts
+5.  **Run the Application**
+    ```bash
+    dotnet run
+    ```
 
-Tools:
+    The API will launch, and you can access the Swagger UI at:
+    *   `https://localhost:7xxx/swagger` or `http://localhost:5xxx/swagger`
 
-Git & GitHub for version control.
+## 🛣️ Roadmap (Coming Soon)
+*   [ ] Exercise Library Management
+*   [ ] Workout Routine Builder ("Push Day", "Leg Day", etc.)
+*   [ ] Session Logging (Sets, Reps, Weights)
+*   [ ] Progress Visualization Charts
 
-Visual Studio 2022 / VS Code.
+## 👥 Team
 
-🚀 Getting Started
-Follow these instructions to get a local copy of the project up and running for development and testing purposes.
+*   **Yousef Ali** - Backend Developer
+*   *[Team Member 2 Name]* - *[Role]*
+*   *[Team Member 3 Name]* - *[Role]*
+*   *[Team Member 4 Name]* - *[Role]*
 
-Prerequisites
-You will need the following software installed on your machine:
-
-.NET 8 SDK
-
-Node.js (which includes npm)
-
-SQL Server Express or another SQL Server instance.
-
-Installation & Setup
-Clone the repository:
-
-Bash
-
-git clone https://github.com/your-github-username/FitTrack.git
-cd FitTrack
-Backend Setup:
-
-Bash
-
-# Navigate to the backend project directory
-cd FitTrack.Api
-
-# Restore NuGet packages
-dotnet restore
-
-# Configure your database connection
-# Open appsettings.Development.json and update the "DefaultConnection" string with your SQL Server credentials.
-
-# Apply Entity Framework migrations to create the database schema
-dotnet ef database update
-Frontend Setup:
-
-Bash
-
-# Navigate to the frontend project directory from the root
-cd fittrack-client
-
-# Install NPM packages
-npm install
-Running the Application:
-
-Run the Backend: In the FitTrack.Api directory, run the command:
-
-Bash
-
-dotnet run
-The API will be running on https://localhost:7xxx and http://localhost:5xxx.
-
-Run the Frontend: In the fittrack-client directory, run the command:
-
-Bash
-
-npm start
-The application will open in your browser at http://localhost:3000.
-
-👥 Team
-Yousef Ali - [Your Role, e.g., Frontend / API]
-
-[Team Member 2 Name] - [Role]
-
-[Team Member 3 Name] - [Role]
-
-[Team Member 4 Name] - [Role]
-
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## 📄 License
+This project is licensed under the MIT License.
