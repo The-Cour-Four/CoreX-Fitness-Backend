@@ -1,120 +1,116 @@
 # CoreX Fitness 💪
 
-A modern full-stack web application for building workout routines, logging training sessions, and tracking your fitness progress. This project was developed as part of our Software Engineering course, built by a team of junior Computer Science students.
+A modern, full-stack web application designed to help users build workout routines, log training sessions, and track fitness progress. This project demonstrates a clear separation of concerns, featuring a robust .NET Web API backend and a lightweight, responsive native frontend.
 
-Our goal was to create a full-stack application with a clear separation between a robust backend API and an interactive, user-friendly frontend.
+---
 
-## ✨ Key Features
+## 🚀 Features
 
-### 👤 User Authentication
-*   **Secure Registration & Login:** Secure system to keep user data private and personalized using JWT (JSON Web Tokens).
-*   **Data Privacy:** Passwords are securely hashed using `BCrypt`.
+### 👤 **User Authentication & Security**
+*   **Secure Access:** JWT (JSON Web Tokens) based authentication system.
+*   **Data Protection:** Passwords are hashed and secured using `BCrypt`.
 
-### 📚 Customizable Exercise Library
-*   **Exercise Database:** Comes pre-loaded with common exercises, but users can add their own custom movements to the library.
+### 📚 **Exercise Library**
+*   **Comprehensive Database:** Access a wide range of pre-loaded exercises.
+*   **Customization:** Users can add their own custom movements to personal libraries.
 
-### 📅 Workout Routine Builder
-*   **Custom Plans:** Easily create, view, update, and delete custom workout plans (e.g., "Push Day", "Leg Day", "Full Body").
+### 📅 **Workout Routine Builder**
+*   **Personalized Plans:** Create and manage custom workout splits (e.g., "Push Day," "Upper Body").
+*   **Flexible Management:** Easy-to-use interface for updating and deleting routines.
 
-### ✍️ Detailed Session Logging
-*   **Track Everything:** Log every workout session.
-*   **Strength:** Track sets, reps, and weight.
-*   **Cardio:** Track distance and duration.
+### ✍️ **Session Logging**
+*   **Detailed Tracking:** Log every set, rep, and weight lifted.
+*   **Cardio Support:** Specific fields for distance and duration tracking.
 
-### 📈 Progress Visualization
-*   **Dynamic Charts:** The core of the application! Select any exercise and view a dynamic line chart that visualizes your performance and progress over time.
+### 📈 **Progress Visualization**
+*   **Analytics:** Visualize strength and consistency trends over time.
+*   **Dynamic Charts:** Interactive graphs powered by your training data.
+
+---
 
 ## 🛠️ Technology Stack
 
-This project is built using a modern technology stack:
+### **Frontend** (Client-Side)
+*   **Core:** HTML5, CSS3, JavaScript (ES6+)
+*   **HTTP Client:** Fetch API / Axios (for backend communication)
+*   **Styling:** Custom CSS / Responsive Design
+*   **Visualization:** Chart.js (for progress tracking)
 
-### Backend
-*   **Framework:** .NET 9 (ASP.NET Core Web API)
-*   **Database:** SQL Server
-*   **ORM:** Entity Framework Core
-*   **Authentication:** JWT (JSON Web Tokens) & BCrypt
+### **Backend** (Server-Side)
+*   **Framework:** ASP.NET Core Web API (.NET 9)
+*   **Database:** Microsoft SQL Server
+*   **ORM:** Entity Framework Core (EF Core)
+*   **Auth:** JWT Authentication
 
-### Frontend
-*   **Framework:** React
-*   **Styling:** CSS Modules / Tailwind CSS
-*   **API Communication:** Axios
-*   **Charting:** Chart.js or Recharts
+---
 
-### Tools
-*   **Version Control:** Git & GitHub
-*   **IDE:** Visual Studio 2022 / VS Code
+## 📂 Project Structure
 
-## 🚀 Getting Started
+The repository is organized into two main directories:
 
-Follow these instructions to get a local copy of the project up and running for development and testing purposes.
+*   `Project/`: Contains the ASP.NET Core Web API solution.
+*   `fittrack-client/`: Contains the static HTML, CSS, and JS files for the frontend.
+
+---
+
+## ⚡ Getting Started
+
+Follow these steps to set up the project locally.
 
 ### Prerequisites
-You will need the following software installed on your machine:
-*   [.NET 9 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/9.0)
-*   [Node.js](https://nodejs.org/) (which includes npm)
-*   [SQL Server Express](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) or another SQL Server instance.
+*   [.NET 9 SDK](https://dotnet.microsoft.com/download)
+*   [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (Express or Developer edition)
+*   A modern web browser (Chrome, Edge, Firefox)
 
-### Installation & Setup
-
-#### 1. Clone the repository
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/YousefAliMLS/CoreX-Fitness.git
 cd CoreX-Fitness
 ```
 
-#### 2. Backend Setup
-Navigate to the backend project directory:
+### 2. Backend Setup
+Navigate to the server directory and set up the database.
+
 ```bash
 cd Project
 ```
 
-**Configuration:**
-1.  Restore NuGet packages:
+1.  **Restore Dependencies:**
     ```bash
     dotnet restore
     ```
-2.  Configure your database connection:
-    *   Open `appsettings.json`.
-    *   Update the `"DefaultConnection"` string with your SQL Server credentials.
-    ```json
-    "ConnectionStrings": {
-      "DefaultConnection": "Server=YOUR_SERVER_NAME;Database=CoreXDataBase;Trusted_Connection=True;TrustServerCertificate=True;"
-    }
-    ```
-3.  Apply Entity Framework migrations to create the database schema:
+2.  **Configure Database:**
+    Open `appsettings.json` and update the `DefaultConnection` string with your local SQL Server credentials.
+3.  **Apply Migrations:**
     ```bash
     dotnet ef database update
     ```
-
-**Run the Backend:**
-```bash
-dotnet run
-```
-The API will be running on `https://localhost:7xxx` (or similar port).
-
-#### 3. Frontend Setup
-Open a new terminal window and navigate to the frontend project directory:
-```bash
-cd fittrack-client
-```
-
-**Install & Run:**
-1.  Install NPM packages:
+4.  **Run API:**
     ```bash
-    npm install
+    dotnet run
     ```
-2.  Run the Frontend:
-    ```bash
-    npm start
-    ```
-The application will open in your browser at `http://localhost:3000`.
+    _The backend will start (usually on https://localhost:7xxx). Keep this terminal running._
 
-## 👥 Team
+### 3. Frontend Setup
+Since the frontend is built with standard web technologies, no build step is required.
+
+1.  Navigate to the `fittrack-client` folder.
+2.  **Option A (Simple):** Open the `index.html` file directly in your browser.
+3.  **Option B (Recommended):** Use a simple static server (like "Live Server" in VS Code) to serve the `fittrack-client` folder. This avoids common CORS issues when the browser tries to fetch data from the API.
+
+---
+
+## 👥 Team Members
+
+This project was collaboratively developed by:
 
 *   **Yousef Mahmoud Ali** - Fullstack Developer
 *   **Mostafa Abd Elhamied** - Frontend Developer
 *   **Mahmoud Khaled** - Frontend Developer
 *   **SalahEldin Mohamed** - Backend Developer
 
+---
+
 ## 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+This project is licensed under the MIT License.
