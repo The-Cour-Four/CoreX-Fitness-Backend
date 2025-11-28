@@ -78,10 +78,9 @@ Follow these instructions to get the backend API running on your local machine.
 
 ## 👥 Team
 
-*   **Yousef Ali** - Backend Developer
-*   *[Team Member 2 Name]* - *[Role]*
-*   *[Team Member 3 Name]* - *[Role]*
-*   *[Team Member 4 Name]* - *[Role]*
+*   **Yousef Mahmoud Ali** - Fullstack Developer
+*   *Mostafa abd Elhamied* - *Frontend Developer*
+*   *Mahmoud Khaled* - *Frontend Developer*
+*   *SalahEldin Mohamed* - *Backend Developer*
 
-## 📄 License
-This project is licensed under the MIT License.
+
