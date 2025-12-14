@@ -12,7 +12,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'  # Adjust to your .NET version (6.0.x, 7.0.x, 8.0.x, etc.)
-  SOLUTION_FILE:  'CoreX.sln'  # Adjust to your solution file name
+  SOLUTION_FILE:  'Project/CoreX.sln'  # Adjust to your solution file name
 
 jobs:
   pre-flight-checks:
