@@ -1,0 +1,76 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request: 
+    branches: [ main, develop ]
+
+jobs:
+  build: 
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses:  actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore CoreX.sln
+
+    - name: Build
+      run: dotnet build CoreX.sln --configuration Release --no-restore
+
+    - name:  Test
+      run: dotnet test CoreX.sln --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      if: success()
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name:  Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run:  dotnet restore CoreX.sln
+
+    - name: Run dotnet format check
+      run: dotnet format CoreX.sln --verify-no-changes --verbosity diagnostic
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version:  '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore CoreX.sln
+
+    - name: Run security scan
+      run: |
+        dotnet list CoreX.sln package --vulnerable --include-transitive || true
