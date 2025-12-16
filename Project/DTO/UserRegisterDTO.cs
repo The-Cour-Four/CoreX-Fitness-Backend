@@ -9,5 +9,6 @@
         public float weight { get; set; }
         public float height { get; set; }
         public int age { get; set; }
+        public string gender { get; set; } = string.Empty;
     }
 }

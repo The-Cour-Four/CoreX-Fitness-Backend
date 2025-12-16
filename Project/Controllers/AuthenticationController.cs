@@ -1,15 +1,17 @@
+using Azure.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Project.Data;
 using Project.DTO;
 using Project.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.Data.Linq;
-using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.Extensions.Configuration;
-using System.ComponentModel.DataAnnotations;
 
 namespace Project.Controllers
 {
@@ -36,6 +38,7 @@ namespace Project.Controllers
         //    }
         //}
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<IActionResult> Register(UserRegisterDTO request)
         {
             if (await _context.Users.AnyAsync(e => e.Email == request.email))
@@ -86,6 +89,31 @@ namespace Project.Controllers
             return Ok("Password has been changed succesfully. ");
         }
 
+        [HttpPost("updateUserInformation")]
+        public async Task<IActionResult> updateUserInformation(UpdateUserInformationDTO request)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.email);
+
+            //if (user is null) return BadRequest("This email does not exist. ");
+
+            
+            if(user is null || (!BCrypt.Net.BCrypt.Verify(request.password, user.passwordHashed)))
+
+                return BadRequest("Incorrect password, email, or the User does not exist.");
+
+
+            user.Name = request.userName;
+            user.Email = request.email;
+            user.passwordHashed = BCrypt.Net.BCrypt.HashPassword(request.password);
+            user.Weight = request.weight;
+            user.Height = request.height;
+            user.Age = request.age;
+            //user.Gender = request.gender;
+            await _context.SaveChangesAsync();
+            return Ok("User information has been updated successfully.");
+
+        }
+
         private string CreateToken(User user)
         {
             //Statements about the user(id, name , etc...)
@@ -122,6 +150,3 @@ namespace Project.Controllers
         }
     }
 }
-
-
-
