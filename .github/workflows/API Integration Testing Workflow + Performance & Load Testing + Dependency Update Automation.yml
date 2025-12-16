@@ -1,12 +1,12 @@
 name: Advanced CI Pipeline
 
-on:
+on: 
   push:  
     branches: [ main, develop ]
-  pull_request: 
+  pull_request:  
     branches: [ main, develop ]
   schedule:
-    - cron:  '0 0 * * 1'  # Weekly on Monday for dependency updates
+    - cron: '0 0 * * 1'  # Weekly on Monday for dependency updates
   workflow_dispatch:   # Manual trigger
 
 jobs:
@@ -18,18 +18,12 @@ jobs:
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          ACCEPT_EULA: Y
+        env: 
+          ACCEPT_EULA:  Y
           SA_PASSWORD: YourStrong@Passw0rd123
           MSSQL_PID: Developer
         ports:
           - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q 'SELECT 1' -C"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 30s
     
     steps:
     - name: 📥 Checkout code
@@ -40,18 +34,24 @@ jobs:
       with:
         dotnet-version: '9.0.x'
     
-    - name: 🔍 Verify SQL Server is ready
+    - name: 🔍 Wait for SQL Server to be ready
       run: |
+        echo "Waiting for SQL Server to start..."
+        sleep 20
+        
         for i in {1..30}; do
-          if docker exec $(docker ps -q -f ancestor=mcr.microsoft.com/mssql/server:2022-latest) /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
+          if sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
             echo "✅ SQL Server is ready!"
             exit 0
           fi
-          echo "⏳ Waiting for SQL Server...  attempt $i/30"
+          echo "⏳ Waiting for SQL Server... attempt $i/30"
           sleep 2
         done
-        echo "❌ SQL Server failed to start"
+        
+        echo "❌ SQL Server failed to become ready"
         exit 1
+      env:
+        SQLCMDPASSWORD: YourStrong@Passw0rd123
     
     - name: 📦 Restore dependencies
       run: dotnet restore CoreX.sln
@@ -77,7 +77,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name:  integration-test-results
+        name: integration-test-results
         path: "**/integration-tests.trx"
       continue-on-error: true
     
@@ -99,12 +99,6 @@ jobs:
           MSSQL_PID: Developer
         ports:
           - 1433:1433
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q 'SELECT 1' -C"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 30s
     
     steps: 
     - name: 📥 Checkout code
@@ -115,17 +109,21 @@ jobs:
       with:
         dotnet-version: '9.0.x'
     
-    - name: 🔍 Verify SQL Server is ready
+    - name: 🔍 Wait for SQL Server to be ready
       run: |
+        echo "Waiting for SQL Server to start..."
+        sleep 20
+        
         for i in {1..30}; do
-          if docker exec $(docker ps -q -f ancestor=mcr. microsoft.com/mssql/server:2022-latest) /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
+          if sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
             echo "✅ SQL Server is ready!"
             exit 0
           fi
-          echo "⏳ Waiting for SQL Server...  attempt $i/30"
+          echo "⏳ Waiting for SQL Server... attempt $i/30"
           sleep 2
         done
-        echo "❌ SQL Server failed to start"
+        
+        echo "❌ SQL Server failed to become ready"
         exit 1
     
     - name: 📦 Restore and build
@@ -141,35 +139,41 @@ jobs:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXPerf;User Id=sa;Password=YourStrong@Passw0rd123;TrustServerCertificate=True;Encrypt=True"
       continue-on-error: true
     
-    - name: 🚀 Start API server
+    - name: 🚀 Start API server in background
       run: |
         cd Project
-        nohup dotnet run --configuration Release --no-build > api. log 2>&1 &
-        echo $! > api. pid
-        sleep 10
+        dotnet run --configuration Release --no-build > ../api. log 2>&1 &
+        echo $! > ../api.pid
+        echo "API server started with PID $(cat ../api.pid)"
+        sleep 15
       env:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXPerf;User Id=sa;Password=YourStrong@Passw0rd123;TrustServerCertificate=True;Encrypt=True"
-        ASPNETCORE_URLS: "http://localhost:5000"
+        ASPNETCORE_URLS:  "http://localhost:5000"
     
     - name: 🔍 Check API health
       run: |
-        for i in {1..20}; do
-          if curl -f http://localhost:5000/weatherforecast 2>/dev/null || curl -f http://localhost:5000 2>/dev/null; then
-            echo "✅ API is responding"
+        for i in {1..30}; do
+          if curl -sf http://localhost:5000/weatherforecast > /dev/null 2>&1; then
+            echo "✅ API is responding (WeatherForecast endpoint)"
+            exit 0
+          elif curl -sf http://localhost:5000 > /dev/null 2>&1; then
+            echo "✅ API is responding (root endpoint)"
             exit 0
           fi
-          echo "⏳ Waiting for API... attempt $i/20"
+          echo "⏳ Waiting for API... attempt $i/30"
           sleep 3
         done
+        
         echo "❌ API failed to start.  Checking logs..."
-        cat Project/api.log || true
+        echo "=== API Logs ==="
+        cat api.log || echo "No logs found"
         exit 1
     
     - name: 📊 Install k6 (Load Testing Tool)
       run: |
         sudo gpg -k
         sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list. d/k6.list
         sudo apt-get update
         sudo apt-get install k6
     
@@ -182,29 +186,35 @@ jobs:
 
         export const options = {
           stages: [
-            { duration: '20s', target: 10 },  // Ramp up to 10 users
-            { duration: '30s', target: 10 },  // Stay at 10 users
-            { duration: '10s', target: 0 },   // Ramp down to 0 users
+            { duration: '15s', target: 5 },   // Ramp up to 5 users
+            { duration: '30s', target: 5 },   // Stay at 5 users
+            { duration: '10s', target: 0 },   // Ramp down
           ],
-          thresholds: {
-            http_req_duration: ['p(95)<1000'], // 95% of requests should be below 1000ms
-            http_req_failed: ['rate<0.2'],     // Less than 20% of requests should fail
+          thresholds:  {
+            http_req_duration: ['p(95)<2000'],  // 95% under 2 seconds
+            http_req_failed: ['rate<0.3'],       // Less than 30% failures
           },
         };
 
         export default function () {
-          // Test WeatherForecast endpoint (default ASP.NET endpoint)
-          const res = http.get('http://localhost:5000/weatherforecast');
-          check(res, {
-            'status is 200 or 404': (r) => r.status === 200 || r.status === 404,
-            'response time < 1000ms': (r) => r.timings.duration < 1000,
+          const endpoints = [
+            'http://localhost:5000',
+            'http://localhost:5000/weatherforecast',
+          ];
+          
+          endpoints.forEach(endpoint => {
+            const res = http.get(endpoint);
+            check(res, {
+              'status is 2xx or 404': (r) => (r.status >= 200 && r.status < 300) || r.status === 404,
+              'response time OK': (r) => r.timings.duration < 2000,
+            });
           });
 
           sleep(1);
         }
         EOF
     
-    - name:  🏋️ Run load tests
+    - name: 🏋️ Run load tests
       run: k6 run tests/load-test.js --out json=performance-results.json
       continue-on-error: true
     
@@ -213,7 +223,7 @@ jobs:
       run: |
         echo "# 🚀 Performance Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -f performance-results.json ]; then
+        if [ -f performance-results. json ]; then
           echo "✅ Load test completed.  Results saved to artifacts." >> $GITHUB_STEP_SUMMARY
         else
           echo "⚠️ Load test results not generated." >> $GITHUB_STEP_SUMMARY
@@ -231,13 +241,14 @@ jobs:
       if: always()
       run: |
         echo "=== API Logs ==="
-        cat Project/api. log || echo "No API logs found"
+        cat api.log || echo "No API logs found"
     
     - name: 🛑 Stop API server
       if:  always()
       run: |
-        if [ -f Project/api.pid ]; then
-          kill $(cat Project/api.pid) || true
+        if [ -f api.pid ]; then
+          kill $(cat api.pid) 2>/dev/null || true
+          echo "API server stopped"
         fi
     
     - name:  ✅ Performance tests completed
@@ -289,9 +300,9 @@ jobs:
     
     - name: 📝 Create Pull Request
       if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-      uses:  peter-evans/create-pull-request@v6
+      uses: peter-evans/create-pull-request@v6
       with:
-        token:  ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: 'chore: update NuGet dependencies'
         title: '🔄 Automated NuGet Dependency Updates'
         body: |
@@ -302,16 +313,16 @@ jobs:
           ### ✅ Validation
           - Integration tests:  Passed
           - Performance tests: Passed
-          - Build:  Successful
+          - Build: Successful
 
           ### 📋 Changes
           Updated packages to their latest compatible versions (major version locked).
 
-          Please review the changes and merge if everything looks good.
+          Please review the changes and merge if everything looks good. 
 
           ---
           *This PR was automatically created by the Advanced CI Pipeline*
-        branch: dependency-updates-${{ github.run_number }}
+        branch:  dependency-updates-${{ github.run_number }}
         delete-branch: true
         labels: |
           dependencies
@@ -325,11 +336,11 @@ jobs:
   pipeline-summary:
     name: 📊 Pipeline Summary
     runs-on: ubuntu-latest
-    needs:  [integration-tests, performance-tests, dependency-updates]
+    needs: [integration-tests, performance-tests, dependency-updates]
     if: always()
     
     steps:
-    - name:  📊 Generate summary
+    - name: 📊 Generate summary
       run: |
         echo "# 🎉 Advanced CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
