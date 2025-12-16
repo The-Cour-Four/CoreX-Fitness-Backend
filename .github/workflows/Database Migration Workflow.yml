@@ -1,0 +1,57 @@
+name: Database Migration Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'Project/Migrations/**'
+      - 'Project/Data/**'
+      - 'Project/Models/**'
+
+jobs:
+  check-migrations: 
+    name: Check EF Migrations
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name:  Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with: 
+        dotnet-version: '9.0.x'
+    
+    - name: Install EF Core tools
+      run: dotnet tool install --global dotnet-ef
+    
+    - name: Restore dependencies
+      run: dotnet restore CoreX.sln
+    
+    - name: Check for pending migrations
+      run: |
+        cd Project
+        dotnet ef migrations has-pending-model-changes
+    
+    - name: Generate migration script
+      run: |
+        cd Project
+        dotnet ef migrations script --idempotent --output migration. sql
+    
+    - name: Upload migration script
+      uses: actions/upload-artifact@v4
+      with:
+        name: migration-script
+        path: Project/migration.sql
+    
+    - name: Comment migration info on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context. issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '✅ Database migration check completed.  Review the migration script in artifacts.'
+          })
