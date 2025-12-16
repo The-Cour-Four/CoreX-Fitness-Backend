@@ -47,8 +47,11 @@ namespace Project.Controllers
             {
                 Name = request.userName,
                 passwordHashed = passwordHashed,
-                Email = request.email
-            };//age wieght tall 
+                Email = request.email,
+                Weight = request.weight,
+                Height = request.height,
+                Age = request.age
+            };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -57,7 +60,7 @@ namespace Project.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login(UserLoginDTO request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(y => y.Email == request.Email);
+            var user = await _context.Users.FirstOrDefaultAsync(y => y.Email == request.email);
 
             if (user is null || !BCrypt.Net.BCrypt.Verify(request.password, user.passwordHashed))
                 return BadRequest("The user does not exist, or the password is incorrect. ");
@@ -66,22 +69,21 @@ namespace Project.Controllers
 
             return Ok(new { token = token });
         }
-        //edit userName  xxxx
-        [HttpGet("forgotPassword")]
-        public async Task<IActionResult> forgotPassword(UserRegisterDTO request)
+
+        [HttpPost("forgotPassword")]
+        public async Task<IActionResult> forgotPassword(ForgotPasswordDTO request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync( z => z.Email == request.email);
 
-            if (user is null)
-                return BadRequest("This email does not exist. ");
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.newPassword))
+                return BadRequest("Email and new password are required.");
 
-            string newPasswordHashed = BCrypt.Net.BCrypt.HashPassword(request.password);
+            var user = await _context.Users.FirstOrDefaultAsync(z => z.Email == request.Email);
+            if (user is null) return BadRequest("This email does not exist.");
 
-            user.passwordHashed = newPasswordHashed;
+            user.passwordHashed = BCrypt.Net.BCrypt.HashPassword(request.newPassword);
 
-            //_context.Users.Add(user);
-            //await _context.SaveChangesAsync();
-            return Ok("Email has been changed succesfully. ");
+            await _context.SaveChangesAsync();
+            return Ok("Password has been changed succesfully. ");
         }
 
         private string CreateToken(User user)

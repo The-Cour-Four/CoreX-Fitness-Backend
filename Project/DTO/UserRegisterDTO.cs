@@ -6,5 +6,8 @@
         public string userName { get; set; } = string.Empty;
         public string password { get; set; } = string.Empty;
         public string email { get; set; } = string.Empty;
+        public float weight { get; set; }
+        public float height { get; set; }
+        public int age { get; set; }
     }
 }

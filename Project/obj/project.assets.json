@@ -5438,23 +5438,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Al Badr\\.nuget\\packages\\": {},
+    "C:\\Users\\dinat\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Al Badr\\Desktop\\NU UNI Documents\\Third Year Fall 2025\\First semester\\CSCI311 Introduction to Computer Architecture\\Assembly_Codes\\CoreX\\Project\\Project.csproj",
+      "projectUniqueName": "D:\\cs\\Project soft\\CoreX-Fitness\\Project\\Project.csproj",
       "projectName": "Project",
-      "projectPath": "C:\\Users\\Al Badr\\Desktop\\NU UNI Documents\\Third Year Fall 2025\\First semester\\CSCI311 Introduction to Computer Architecture\\Assembly_Codes\\CoreX\\Project\\Project.csproj",
-      "packagesPath": "C:\\Users\\Al Badr\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Al Badr\\Desktop\\NU UNI Documents\\Third Year Fall 2025\\First semester\\CSCI311 Introduction to Computer Architecture\\Assembly_Codes\\CoreX\\Project\\obj\\",
+      "projectPath": "D:\\cs\\Project soft\\CoreX-Fitness\\Project\\Project.csproj",
+      "packagesPath": "C:\\Users\\dinat\\.nuget\\packages\\",
+      "outputPath": "D:\\cs\\Project soft\\CoreX-Fitness\\Project\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Al Badr\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\dinat\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -5481,7 +5481,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "9.0.200"
     },
     "frameworks": {
       "net9.0": {
@@ -5547,7 +5547,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
