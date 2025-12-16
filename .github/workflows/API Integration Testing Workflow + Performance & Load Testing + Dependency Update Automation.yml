@@ -1,9 +1,9 @@
 name: Advanced CI Pipeline
 
 on: 
-  push:  
+  push:
     branches: [ main, develop ]
-  pull_request:  
+  pull_request: 
     branches: [ main, develop ]
   schedule:
     - cron: '0 0 * * 1'  # Weekly on Monday for dependency updates
@@ -21,37 +21,39 @@ jobs:
         env: 
           ACCEPT_EULA:  Y
           SA_PASSWORD: YourStrong@Passw0rd123
-          MSSQL_PID: Developer
+          MSSQL_PID:  Developer
         ports:
           - 1433:1433
+        options: >-
+          --health-cmd "timeout 10s bash -c ': > /dev/tcp/127.0.0.1/1433' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
     
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
     
-    - name: 🔧 Setup . NET
+    - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
     
-    - name: 🔍 Wait for SQL Server to be ready
+    - name: 🔍 Verify SQL Server connectivity
       run: |
-        echo "Waiting for SQL Server to start..."
-        sleep 20
-        
+        echo "Testing SQL Server connection on localhost:1433..."
         for i in {1..30}; do
-          if sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
-            echo "✅ SQL Server is ready!"
+          if timeout 2 bash -c "echo > /dev/tcp/localhost/1433" 2>/dev/null; then
+            echo "✅ SQL Server port 1433 is open and accepting connections!"
+            sleep 5
             exit 0
           fi
           echo "⏳ Waiting for SQL Server... attempt $i/30"
           sleep 2
         done
-        
-        echo "❌ SQL Server failed to become ready"
+        echo "❌ SQL Server port not accessible"
         exit 1
-      env:
-        SQLCMDPASSWORD: YourStrong@Passw0rd123
     
     - name: 📦 Restore dependencies
       run: dotnet restore CoreX.sln
@@ -68,7 +70,7 @@ jobs:
       continue-on-error: true
     
     - name: 🧪 Run integration tests
-      run: dotnet test CoreX.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-tests.trx" || echo "⚠️ No tests found or tests failed"
+      run: dotnet test CoreX. sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-tests.trx" || echo "⚠️ No tests found or tests failed"
       env:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXTest;User Id=sa;Password=YourStrong@Passw0rd123;TrustServerCertificate=True;Encrypt=True"
       continue-on-error: true
@@ -85,45 +87,49 @@ jobs:
       run: echo "✅ Integration tests job completed!"
 
   # JOB 2: Performance & Load Testing (runs after integration-tests)
-  performance-tests: 
-    name: 🚀 Performance & Load Testing
-    runs-on:  ubuntu-latest
+  performance-tests:
+    name:  🚀 Performance & Load Testing
+    runs-on: ubuntu-latest
     needs: integration-tests  # Waits for integration-tests to complete
     
     services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+      sqlserver: 
+        image: mcr.microsoft. com/mssql/server: 2022-latest
         env: 
-          ACCEPT_EULA:  Y
-          SA_PASSWORD: YourStrong@Passw0rd123
+          ACCEPT_EULA: Y
+          SA_PASSWORD:  YourStrong@Passw0rd123
           MSSQL_PID: Developer
         ports:
           - 1433:1433
+        options: >-
+          --health-cmd "timeout 10s bash -c ': > /dev/tcp/127.0.0.1/1433' || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
     
-    steps: 
+    steps:
     - name: 📥 Checkout code
-      uses:  actions/checkout@v4
+      uses: actions/checkout@v4
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
-      with:
+      with: 
         dotnet-version: '9.0.x'
     
-    - name: 🔍 Wait for SQL Server to be ready
+    - name: 🔍 Verify SQL Server connectivity
       run: |
-        echo "Waiting for SQL Server to start..."
-        sleep 20
-        
+        echo "Testing SQL Server connection on localhost: 1433..."
         for i in {1..30}; do
-          if sqlcmd -S localhost -U sa -P YourStrong@Passw0rd123 -Q "SELECT 1" -C > /dev/null 2>&1; then
-            echo "✅ SQL Server is ready!"
+          if timeout 2 bash -c "echo > /dev/tcp/localhost/1433" 2>/dev/null; then
+            echo "✅ SQL Server port 1433 is open and accepting connections!"
+            sleep 5
             exit 0
           fi
           echo "⏳ Waiting for SQL Server... attempt $i/30"
           sleep 2
         done
-        
-        echo "❌ SQL Server failed to become ready"
+        echo "❌ SQL Server port not accessible"
         exit 1
     
     - name: 📦 Restore and build
@@ -142,19 +148,20 @@ jobs:
     - name: 🚀 Start API server in background
       run: |
         cd Project
-        dotnet run --configuration Release --no-build > ../api. log 2>&1 &
+        nohup dotnet run --configuration Release --no-build > ../api.log 2>&1 &
         echo $! > ../api.pid
         echo "API server started with PID $(cat ../api.pid)"
         sleep 15
       env:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXPerf;User Id=sa;Password=YourStrong@Passw0rd123;TrustServerCertificate=True;Encrypt=True"
-        ASPNETCORE_URLS:  "http://localhost:5000"
+        ASPNETCORE_URLS: "http://localhost:5000"
     
     - name: 🔍 Check API health
       run: |
         for i in {1..30}; do
           if curl -sf http://localhost:5000/weatherforecast > /dev/null 2>&1; then
             echo "✅ API is responding (WeatherForecast endpoint)"
+            curl -s http://localhost:5000/weatherforecast | head -n 5
             exit 0
           elif curl -sf http://localhost:5000 > /dev/null 2>&1; then
             echo "✅ API is responding (root endpoint)"
@@ -173,7 +180,7 @@ jobs:
       run: |
         sudo gpg -k
         sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
-        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list. d/k6.list
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
         sudo apt-get update
         sudo apt-get install k6
     
@@ -186,7 +193,7 @@ jobs:
 
         export const options = {
           stages: [
-            { duration: '15s', target: 5 },   // Ramp up to 5 users
+            { duration:  '15s', target: 5 },   // Ramp up to 5 users
             { duration: '30s', target: 5 },   // Stay at 5 users
             { duration: '10s', target: 0 },   // Ramp down
           ],
@@ -214,7 +221,7 @@ jobs:
         }
         EOF
     
-    - name: 🏋️ Run load tests
+    - name:  🏋️ Run load tests
       run: k6 run tests/load-test.js --out json=performance-results.json
       continue-on-error: true
     
@@ -223,7 +230,7 @@ jobs:
       run: |
         echo "# 🚀 Performance Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [ -f performance-results. json ]; then
+        if [ -f performance-results.json ]; then
           echo "✅ Load test completed.  Results saved to artifacts." >> $GITHUB_STEP_SUMMARY
         else
           echo "⚠️ Load test results not generated." >> $GITHUB_STEP_SUMMARY
@@ -244,19 +251,19 @@ jobs:
         cat api.log || echo "No API logs found"
     
     - name: 🛑 Stop API server
-      if:  always()
+      if: always()
       run: |
         if [ -f api.pid ]; then
-          kill $(cat api.pid) 2>/dev/null || true
+          kill $(cat api. pid) 2>/dev/null || true
           echo "API server stopped"
         fi
     
-    - name:  ✅ Performance tests completed
+    - name: ✅ Performance tests completed
       run: echo "✅ Performance tests completed!"
 
   # JOB 3: Dependency Updates (runs after performance-tests)
   dependency-updates:
-    name:  🔄 Dependency Update Check
+    name: 🔄 Dependency Update Check
     runs-on: ubuntu-latest
     needs: performance-tests  # Waits for performance-tests to complete
     
@@ -300,9 +307,9 @@ jobs:
     
     - name: 📝 Create Pull Request
       if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-      uses: peter-evans/create-pull-request@v6
+      uses:  peter-evans/create-pull-request@v6
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token:  ${{ secrets.GITHUB_TOKEN }}
         commit-message: 'chore: update NuGet dependencies'
         title: '🔄 Automated NuGet Dependency Updates'
         body: |
@@ -318,11 +325,11 @@ jobs:
           ### 📋 Changes
           Updated packages to their latest compatible versions (major version locked).
 
-          Please review the changes and merge if everything looks good. 
+          Please review the changes and merge if everything looks good.
 
           ---
           *This PR was automatically created by the Advanced CI Pipeline*
-        branch:  dependency-updates-${{ github.run_number }}
+        branch: dependency-updates-${{ github.run_number }}
         delete-branch: true
         labels: |
           dependencies
