@@ -134,7 +134,7 @@ jobs:
     
     - name: 📦 Restore and build
       run: |
-        dotnet restore CoreX. sln
+        dotnet restore CoreX.sln
         dotnet build CoreX.sln -c Release --no-restore
     
     - name: 🗄️ Setup database
