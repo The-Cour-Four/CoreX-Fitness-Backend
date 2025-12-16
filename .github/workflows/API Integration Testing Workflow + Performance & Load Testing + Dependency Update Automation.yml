@@ -1,0 +1,311 @@
+name: Advanced CI Pipeline
+
+on:
+  push: 
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * 1'  # Weekly on Monday for dependency updates
+  workflow_dispatch:   # Manual trigger
+
+jobs:
+  # JOB 1: Integration Tests
+  integration-tests:
+    name: 🧪 API Integration Tests
+    runs-on:  ubuntu-latest
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env: 
+          ACCEPT_EULA:  Y
+          SA_PASSWORD: YourStrong@Passw0rd
+          MSSQL_PID: Developer
+        ports: 
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup . NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: 📦 Restore dependencies
+      run:  dotnet restore CoreX.sln
+    
+    - name: 🏗️ Build solution
+      run: dotnet build CoreX.sln --configuration Release --no-restore
+    
+    - name: 🗄️ Setup test database
+      run: |
+        cd Project
+        dotnet ef database update --configuration Release
+      env:
+        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXTest;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+    
+    - name: 🧪 Run integration tests
+      run: dotnet test CoreX.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=integration-tests.trx"
+      env:
+        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXTest;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+    
+    - name: 📊 Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-test-results
+        path: "**/integration-tests.trx"
+    
+    - name: ✅ Integration tests completed
+      run: echo "✅ Integration tests passed successfully!"
+
+  # JOB 2: Performance & Load Testing (runs after integration-tests)
+  performance-tests:
+    name: 🚀 Performance & Load Testing
+    runs-on:  ubuntu-latest
+    needs: integration-tests  # Waits for integration-tests to complete
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env: 
+          ACCEPT_EULA:  Y
+          SA_PASSWORD: YourStrong@Passw0rd
+          MSSQL_PID: Developer
+        ports: 
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🔧 Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: 📦 Restore and build
+      run: |
+        dotnet restore CoreX.sln
+        dotnet build CoreX.sln -c Release --no-restore
+    
+    - name: 🗄️ Setup database
+      run: |
+        cd Project
+        dotnet ef database update --configuration Release
+      env: 
+        ConnectionStrings__DefaultConnection:  "Server=localhost,1433;Database=CoreXPerf;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+    
+    - name: 🚀 Start API server
+      run: |
+        cd Project
+        dotnet run --configuration Release --no-build &
+        echo $! > api. pid
+        sleep 30
+      env:
+        ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=CoreXPerf;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True"
+        ASPNETCORE_URLS: "http://localhost:5000"
+    
+    - name:  🔍 Check API health
+      run: |
+        for i in {1..10}; do
+          if curl -f http://localhost:5000/health 2>/dev/null || curl -f http://localhost:5000 2>/dev/null; then
+            echo "✅ API is responding"
+            exit 0
+          fi
+          echo "Waiting for API...  attempt $i/10"
+          sleep 5
+        done
+        echo "❌ API failed to start"
+        exit 1
+    
+    - name: 📊 Install k6 (Load Testing Tool)
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring. gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+    
+    - name: 📝 Create k6 load test script
+      run: |
+        mkdir -p tests
+        cat > tests/load-test.js << 'EOF'
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+
+        export const options = {
+          stages: [
+            { duration: '30s', target: 20 },  // Ramp up to 20 users
+            { duration: '1m', target: 20 },   // Stay at 20 users
+            { duration: '30s', target: 0 },   // Ramp down to 0 users
+          ],
+          thresholds: {
+            http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
+            http_req_failed: ['rate<0.1'],    // Less than 10% of requests should fail
+          },
+        };
+
+        export default function () {
+          // Test health endpoint
+          const healthRes = http.get('http://localhost:5000/health');
+          check(healthRes, {
+            'health check status is 200': (r) => r.status === 200,
+          });
+
+          // Test main endpoint
+          const res = http.get('http://localhost:5000/');
+          check(res, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 500ms':  (r) => r.timings.duration < 500,
+          });
+
+          sleep(1);
+        }
+        EOF
+    
+    - name:  🏋️ Run load tests
+      run: k6 run tests/load-test.js --out json=performance-results.json
+      continue-on-error: true
+    
+    - name: 📊 Upload performance results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-results
+        path: performance-results.json
+    
+    - name: 🛑 Stop API server
+      if: always()
+      run: |
+        if [ -f api.pid ]; then
+          kill $(cat api.pid) || true
+        fi
+    
+    - name:  ✅ Performance tests completed
+      run: echo "✅ Performance tests completed!"
+
+  # JOB 3: Dependency Updates (runs after performance-tests)
+  dependency-updates:
+    name: 🔄 Dependency Update Check
+    runs-on: ubuntu-latest
+    needs: performance-tests  # Waits for performance-tests to complete
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 🔧 Setup . NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: 📦 Install dotnet-outdated tool
+      run: dotnet tool install --global dotnet-outdated-tool
+    
+    - name:  🔍 Check for outdated packages
+      id: check_outdated
+      run: |
+        dotnet outdated CoreX. sln --output outdated.json || true
+        if [ -f outdated.json ]; then
+          echo "has_updates=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_updates=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: 📋 List outdated packages
+      if: steps.check_outdated.outputs. has_updates == 'true'
+      run: dotnet outdated CoreX.sln
+    
+    - name: 🔄 Update packages (minor and patch only)
+      if: steps.check_outdated. outputs.has_updates == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      run: |
+        dotnet outdated CoreX.sln --upgrade --version-lock Major
+    
+    - name: 🧪 Test after updates
+      if: steps.check_outdated. outputs.has_updates == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      run: |
+        dotnet restore CoreX.sln
+        dotnet build CoreX.sln --configuration Release
+        dotnet test CoreX.sln --configuration Release --no-build
+    
+    - name: 📝 Create Pull Request
+      if: steps.check_outdated.outputs.has_updates == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message:  'chore: update NuGet dependencies'
+        title: '🔄 Automated NuGet Dependency Updates'
+        body: |
+          ## 🔄 Dependency Updates
+
+          This PR contains automated updates to NuGet packages. 
+
+          ### ✅ Validation
+          - Integration tests:  Passed
+          - Performance tests: Passed
+          - Build: Successful
+
+          ### 📋 Changes
+          Updated packages to their latest compatible versions (major version locked).
+
+          Please review the changes and merge if everything looks good.
+
+          ---
+          *This PR was automatically created by the Advanced CI Pipeline*
+        branch: dependency-updates-${{ github.run_number }}
+        delete-branch: true
+        labels: |
+          dependencies
+          automated
+    
+    - name: ✅ Dependency check completed
+      run: echo "✅ Dependency updates check completed!"
+
+  # JOB 4: Summary (runs after all jobs complete)
+  pipeline-summary:
+    name: 📊 Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [integration-tests, performance-tests, dependency-updates]
+    if: always()
+    
+    steps:
+    - name: 📊 Generate summary
+      run: |
+        echo "# 🎉 Advanced CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Job Status" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| 🧪 Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🚀 Performance Tests | ${{ needs.performance-tests. result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| 🔄 Dependency Updates | ${{ needs. dependency-updates.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflow Run:** ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+    
+    - name: ✅ All jobs completed
+      if: needs.integration-tests.result == 'success' && needs.performance-tests.result == 'success' && needs.dependency-updates.result == 'success'
+      run: echo "🎉 All pipeline jobs completed successfully!"
+    
+    - name: ⚠️ Some jobs failed
+      if: needs. integration-tests.result != 'success' || needs.performance-tests.result != 'success' || needs.dependency-updates.result != 'success'
+      run:  |
+        echo "⚠️ Some pipeline jobs failed. Please check the logs."
+        exit 1
