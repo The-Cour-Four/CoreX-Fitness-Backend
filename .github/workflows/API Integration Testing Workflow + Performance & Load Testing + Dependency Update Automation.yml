@@ -1,11 +1,11 @@
 name: Quality Gates Pipeline
 
-on:
+on: 
   push:
     branches: [ main, develop ]
-  pull_request: 
+  pull_request:  
     branches: [ main, develop ]
-  workflow_dispatch: 
+  workflow_dispatch:  
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -17,23 +17,23 @@ jobs:
   # STAGE 1: Code Quality & Security (Parallel)
   # ============================================
   
-  code-analysis:
+  code-analysis: 
     name: 📊 Code Analysis
     runs-on: ubuntu-latest
     
     steps:
-    - name:  📥 Checkout
-      uses: actions/checkout@v4
+    - name:   📥 Checkout
+      uses:  actions/checkout@v4
       with:
-        fetch-depth:  0  # Full history for better analysis
+        fetch-depth:   0  # Full history for better analysis
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env. DOTNET_VERSION }}
     
-    - name: 📦 Restore
-      run:  dotnet restore ${{ env. SOLUTION_PATH }}
+    - name:  📦 Restore
+      run:   dotnet restore ${{ env. SOLUTION_PATH }}
     
     - name: 🎨 Format Check
       run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --verbosity normal
@@ -55,8 +55,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name:  📥 Checkout
-      uses:  actions/checkout@v4
+    - name:   📥 Checkout
+      uses:   actions/checkout@v4
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
@@ -64,7 +64,7 @@ jobs:
         dotnet-version: ${{ env. DOTNET_VERSION }}
     
     - name: 📦 Restore
-      run:  dotnet restore ${{ env. SOLUTION_PATH }}
+      run:   dotnet restore ${{ env. SOLUTION_PATH }}
     
     - name: 🛡️ Scan for Vulnerable Packages
       run: |
@@ -80,22 +80,22 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: security-report
-        path: vulnerability-report.txt
+        path:  vulnerability-report.txt
 
   dependency-check:
     name: 📦 Dependency Audit
     runs-on: ubuntu-latest
     
-    steps: 
-    - name: 📥 Checkout
+    steps:  
+    - name:  📥 Checkout
       uses: actions/checkout@v4
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: ${{ env. DOTNET_VERSION }}
+      with: 
+        dotnet-version: ${{ env.DOTNET_VERSION }}
     
-    - name: 📋 List Dependencies
+    - name:  📋 List Dependencies
       run: |
         echo "## 📦 Project Dependencies" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -107,7 +107,7 @@ jobs:
   # STAGE 2: Build & Unit Tests
   # ============================================
   
-  build-and-test: 
+  build-and-test:  
     name: 🏗️ Build & Test
     runs-on: ubuntu-latest
     needs: [code-analysis, security-scan, dependency-check]
@@ -118,7 +118,7 @@ jobs:
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
-      with:
+      with: 
         dotnet-version: ${{ env.DOTNET_VERSION }}
     
     - name: 📦 Restore Dependencies
@@ -128,6 +128,7 @@ jobs:
       run: dotnet build ${{ env.SOLUTION_PATH }} --configuration Release --no-restore
     
     - name: 🧪 Run Unit Tests
+      id: run_tests
       run: |
         dotnet test ${{ env.SOLUTION_PATH }} \
           --configuration Release \
@@ -136,26 +137,45 @@ jobs:
           --logger "trx;LogFileName=test-results.trx" \
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults
+        
+        # Check if any test files were created
+        if [ -d "./TestResults" ] && [ "$(find ./TestResults -name '*.trx' | wc -l)" -gt 0 ]; then
+          echo "tests_found=true" >> $GITHUB_OUTPUT
+        else
+          echo "tests_found=false" >> $GITHUB_OUTPUT
+        fi
       continue-on-error: true
     
     - name: 📊 Test Report
       uses: dorny/test-reporter@v1
-      if: always()
-      with:
-        name:  Test Results
-        path: '**/test-results.trx'
+      if: always() && steps.run_tests.outputs.tests_found == 'true'
+      with: 
+        name:   Test Results
+        path: './TestResults/**/*.trx'
         reporter: dotnet-trx
         fail-on-error: false
     
-    - name: 📈 Code Coverage Report
+    - name: 📈 Test Summary
       if: always()
       run: |
-        echo "## 📈 Code Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "## 📈 Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Coverage reports generated in TestResults directory" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.run_tests.outputs.tests_found }}" == "true" ]; then
+          echo "✅ Tests executed and results available" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Test results and coverage reports generated in TestResults directory" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "ℹ️ No test projects found in solution" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Recommendation**: Add test projects to improve code quality" >> $GITHUB_STEP_SUMMARY
+          echo "- Create a new xUnit/NUnit/MSTest project" >> $GITHUB_STEP_SUMMARY
+          echo "- Reference your main project" >> $GITHUB_STEP_SUMMARY
+          echo "- Add unit tests for your controllers and services" >> $GITHUB_STEP_SUMMARY
+        fi
     
     - name: 📤 Upload Test Results
-      if: always()
+      if: always() && steps.run_tests.outputs.tests_found == 'true'
       uses: actions/upload-artifact@v4
       with:
         name: test-results
@@ -166,7 +186,7 @@ jobs:
     
     - name: 📤 Upload Build Artifact
       uses: actions/upload-artifact@v4
-      with: 
+      with:  
         name: published-app
         path: ./publish
 
@@ -174,10 +194,10 @@ jobs:
   # STAGE 3: Integration & API Tests
   # ============================================
   
-  integration-tests: 
+  integration-tests:  
     name: 🔗 Integration Tests
-    runs-on:  ubuntu-latest
-    needs: build-and-test
+    runs-on:   ubuntu-latest
+    needs:  build-and-test
     
     services:
       sqlserver:
@@ -185,11 +205,11 @@ jobs:
         env:
           ACCEPT_EULA: Y
           SA_PASSWORD: TestPass@123
-          MSSQL_PID: Developer
+          MSSQL_PID:  Developer
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "timeout 10s bash -c ':  > /dev/tcp/127.0.0.1/1433' || exit 1"
+          --health-cmd "timeout 10s bash -c ':   > /dev/tcp/127.0.0.1/1433' || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
@@ -199,28 +219,28 @@ jobs:
     - name: 📥 Checkout
       uses: actions/checkout@v4
     
-    - name:  🔧 Setup .NET
+    - name:   🔧 Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version:  ${{ env.DOTNET_VERSION }}
+        dotnet-version:   ${{ env.DOTNET_VERSION }}
     
     - name: 🗄️ Wait for SQL Server
       run: |
-        for i in {1..30}; do
+        for i in {1.. 30}; do
           if timeout 2 bash -c "echo > /dev/tcp/localhost/1433" 2>/dev/null; then
             echo "✅ SQL Server ready!"
             sleep 5
             exit 0
           fi
-          echo "⏳ Waiting...  ($i/30)"
+          echo "⏳ Waiting...   ($i/30)"
           sleep 2
         done
         exit 1
     
     - name: 📦 Restore & Build
       run: |
-        dotnet restore ${{ env.SOLUTION_PATH }}
-        dotnet build ${{ env. SOLUTION_PATH }} -c Release --no-restore
+        dotnet restore ${{ env. SOLUTION_PATH }}
+        dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
     
     - name: 🗄️ Run Migrations
       run: |
@@ -230,7 +250,19 @@ jobs:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=TestDB;User Id=sa;Password=TestPass@123;TrustServerCertificate=True;Encrypt=True"
       continue-on-error: true
     
+    - name: 🧪 Check for Integration Tests
+      id: check_integration_tests
+      run:  |
+        # Check if there are any integration tests
+        if dotnet test ${{ env.SOLUTION_PATH }} --list-tests --filter "Category=Integration" 2>&1 | grep -q "Test"; then
+          echo "has_tests=true" >> $GITHUB_OUTPUT
+        else
+          echo "has_tests=false" >> $GITHUB_OUTPUT
+        fi
+      continue-on-error: true
+    
     - name: 🧪 Run Integration Tests
+      if: steps.check_integration_tests.outputs.has_tests == 'true'
       run: |
         dotnet test ${{ env.SOLUTION_PATH }} \
           --filter "Category=Integration" \
@@ -245,9 +277,14 @@ jobs:
       run: |
         echo "## 🔗 Integration Tests" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "✅ Integration tests completed" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ steps.check_integration_tests.outputs.has_tests }}" == "true" ]; then
+          echo "✅ Integration tests executed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "ℹ️ No integration tests found (tests with [Trait(\"Category\", \"Integration\")])" >> $GITHUB_STEP_SUMMARY
+        fi
 
-  api-contract-tests:
+  api-contract-tests: 
     name: 📡 API Contract Tests
     runs-on: ubuntu-latest
     needs: build-and-test
@@ -255,13 +292,13 @@ jobs:
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
-        env: 
-          ACCEPT_EULA:  Y
-          SA_PASSWORD: TestPass@123
+        env:  
+          ACCEPT_EULA:   Y
+          SA_PASSWORD:  TestPass@123
           MSSQL_PID: Developer
         ports:
           - 1433:1433
-        options: >-
+        options:  >-
           --health-cmd "timeout 10s bash -c ': > /dev/tcp/127.0.0.1/1433' || exit 1"
           --health-interval 10s
           --health-timeout 5s
@@ -269,15 +306,15 @@ jobs:
           --health-start-period 30s
     
     steps:
-    - name:  📥 Checkout
+    - name:   📥 Checkout
       uses: actions/checkout@v4
     
-    - name: 🔧 Setup .NET
+    - name:  🔧 Setup .NET
       uses: actions/setup-dotnet@v4
-      with: 
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      with:  
+        dotnet-version:  ${{ env.DOTNET_VERSION }}
     
-    - name:  🗄️ Wait for SQL Server
+    - name:   🗄️ Wait for SQL Server
       run: |
         for i in {1..30}; do
           if timeout 2 bash -c "echo > /dev/tcp/localhost/1433" 2>/dev/null; then
@@ -285,21 +322,21 @@ jobs:
             sleep 5
             exit 0
           fi
-          echo "⏳ Waiting... ($i/30)"
+          echo "⏳ Waiting...  ($i/30)"
           sleep 2
         done
         exit 1
     
     - name: 📦 Restore & Build
       run: |
-        dotnet restore ${{ env.SOLUTION_PATH }}
+        dotnet restore ${{ env. SOLUTION_PATH }}
         dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
     
-    - name: 🚀 Start API Server
+    - name:  🚀 Start API Server
       run: |
         cd Project
         nohup dotnet run --configuration Release --no-build --no-launch-profile > ../api. log 2>&1 &
-        echo $!  > ../api. pid
+        echo $! > ../api.pid
         sleep 15
       env:
         ConnectionStrings__DefaultConnection: "Server=localhost,1433;Database=TestDB;User Id=sa;Password=TestPass@123;TrustServerCertificate=True;Encrypt=True"
@@ -314,7 +351,7 @@ jobs:
             curl -s http://localhost:5000/weatherforecast | head -n 10
             exit 0
           fi
-          echo "⏳ Waiting for API... ($i/20)"
+          echo "⏳ Waiting for API...  ($i/20)"
           sleep 3
         done
         echo "❌ API failed to start"
@@ -330,7 +367,7 @@ jobs:
         response=$(curl -s -w "\n%{http_code}" http://localhost:5000/weatherforecast)
         http_code=$(echo "$response" | tail -n1)
         
-        echo "- **WeatherForecast Endpoint**: HTTP $http_code" >> $GITHUB_STEP_SUMMARY
+        echo "- **WeatherForecast Endpoint**:  HTTP $http_code" >> $GITHUB_STEP_SUMMARY
         
         if [ "$http_code" = "200" ]; then
           echo "  - ✅ Success" >> $GITHUB_STEP_SUMMARY
@@ -353,7 +390,7 @@ jobs:
   # STAGE 4: Performance & Load Tests
   # ============================================
   
-  performance-tests: 
+  performance-tests:  
     name: ⚡ Performance Tests
     runs-on: ubuntu-latest
     needs: [integration-tests, api-contract-tests]
@@ -362,10 +399,10 @@ jobs:
     services:
       sqlserver:
         image: mcr.microsoft.com/mssql/server:2022-latest
-        env: 
+        env:  
           ACCEPT_EULA:  Y
           SA_PASSWORD: TestPass@123
-          MSSQL_PID: Developer
+          MSSQL_PID:  Developer
         ports:
           - 1433:1433
         options: >-
@@ -376,15 +413,15 @@ jobs:
           --health-start-period 30s
     
     steps:
-    - name:  📥 Checkout
+    - name:   📥 Checkout
       uses: actions/checkout@v4
     
     - name: 🔧 Setup .NET
       uses: actions/setup-dotnet@v4
-      with: 
-        dotnet-version: ${{ env.DOTNET_VERSION }}
+      with:  
+        dotnet-version:  ${{ env.DOTNET_VERSION }}
     
-    - name:  🗄️ Wait for SQL Server
+    - name:   🗄️ Wait for SQL Server
       run: |
         for i in {1..30}; do
           if timeout 2 bash -c "echo > /dev/tcp/localhost/1433" 2>/dev/null; then
@@ -411,7 +448,7 @@ jobs:
         ASPNETCORE_URLS: "http://localhost:5000"
         ASPNETCORE_ENVIRONMENT: "Production"
     
-    - name:  🔍 Wait for API
+    - name:   🔍 Wait for API
       run: |
         for i in {1..20}; do
           if curl -sf http://localhost:5000/weatherforecast > /dev/null 2>&1; then
@@ -426,7 +463,7 @@ jobs:
     - name: 📊 Install k6
       run: |
         sudo gpg -k
-        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring. gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
         echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
         sudo apt-get update
         sudo apt-get install k6
@@ -448,7 +485,7 @@ jobs:
           ],
           thresholds: {
             http_req_duration: ['p(95)<1500'],
-            'http_req_duration{staticAsset: yes}': ['p(95)<500'],
+            'http_req_duration{staticAsset:  yes}': ['p(95)<500'],
             errors: ['rate<0.1'],
           },
         };
@@ -466,7 +503,7 @@ jobs:
         }
         EOF
     
-    - name: 🏋️ Run Load Tests
+    - name:  🏋️ Run Load Tests
       run: k6 run load-test.js --out json=perf-results.json
       continue-on-error: true
     
@@ -476,19 +513,19 @@ jobs:
         echo "## ⚡ Performance Test Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "Load test completed with:" >> $GITHUB_STEP_SUMMARY
-        echo "- Ramp up: 10 users over 30s" >> $GITHUB_STEP_SUMMARY
-        echo "- Sustained:  20 users for 1 minute" >> $GITHUB_STEP_SUMMARY
+        echo "- Ramp up:  10 users over 30s" >> $GITHUB_STEP_SUMMARY
+        echo "- Sustained:   20 users for 1 minute" >> $GITHUB_STEP_SUMMARY
         echo "- Ramp down: 30s" >> $GITHUB_STEP_SUMMARY
     
     - name: 📤 Upload Performance Results
-      if: always()
+      if:  always()
       uses: actions/upload-artifact@v4
-      with:
+      with: 
         name: performance-results
-        path: perf-results.json
+        path: perf-results. json
     
-    - name: 🛑 Stop API
-      if: always()
+    - name:  🛑 Stop API
+      if:  always()
       run: |
         if [ -f api.pid ]; then
           kill $(cat api.pid) 2>/dev/null || true
@@ -498,10 +535,10 @@ jobs:
   # STAGE 5: Docker Build (Optional)
   # ============================================
   
-  docker-build: 
+  docker-build:  
     name: 🐳 Docker Build
-    runs-on:  ubuntu-latest
-    needs: build-and-test
+    runs-on:   ubuntu-latest
+    needs:  build-and-test
     if: github.event_name == 'push'
     
     steps:
@@ -519,8 +556,8 @@ jobs:
         FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
         WORKDIR /src
         COPY ["Project/Project.csproj", "Project/"]
-        RUN dotnet restore "Project/Project. csproj"
-        COPY . .
+        RUN dotnet restore "Project/Project.csproj"
+        COPY .  .
         WORKDIR "/src/Project"
         RUN dotnet build "Project.csproj" -c Release -o /app/build
 
@@ -538,19 +575,19 @@ jobs:
     
     - name: 🐳 Build Docker Image
       uses: docker/build-push-action@v5
-      with: 
-        context: .
+      with:  
+        context: . 
         push: false
         tags: corex-fitness-backend:${{ github.sha }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
-    - name: 📊 Docker Build Summary
+    - name:  📊 Docker Build Summary
       run: |
         echo "## 🐳 Docker Build" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "✅ Docker image built successfully" >> $GITHUB_STEP_SUMMARY
-        echo "- Tag: corex-fitness-backend:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Tag: corex-fitness-backend: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
 
   # ============================================
   # STAGE 6: Final Summary
@@ -580,7 +617,7 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "---" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Commit**:  ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**:   ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
         echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
         echo "**Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Workflow**: ${{ github. workflow }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Workflow**: ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
