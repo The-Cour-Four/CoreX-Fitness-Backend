@@ -232,7 +232,8 @@ The application is configured for deployment to Azure with:
 
 ## 👥 Authors
 
-The Cour Four Team
+Yousef Mahmoud Ali - Fullstack Developer & Project Manager
+Salaheldin Tarek - Backend Developer
 
 ## 📄 License
 
