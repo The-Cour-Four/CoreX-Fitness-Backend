@@ -233,7 +233,7 @@ The application is configured for deployment to Azure with:
 ## 👥 Authors
 
 -Yousef Mahmoud Ali - Fullstack Developer & Project Manager
-
+-Salah Eldin Mohamed - Backend Developer
 
 
 ## 📄 License
