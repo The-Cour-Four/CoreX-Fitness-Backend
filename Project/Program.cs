@@ -88,7 +88,27 @@ app.UseRateLimiter();
 app.UseAuthorization();
 
 
+app.Use(async (context, next) =>
+{
+    var authHeader = context.Request.Headers["Authorization"].ToString();
+
+    if (!string.IsNullOrEmpty(authHeader))
+    {
+        var token = authHeader.Replace("Bearer ", "");
+
+        if (Project.Controllers.AuthenticationController._tokenBlacklist.Contains(token))
+        {
+            context.Response.StatusCode = 401;
+            await context.Response.WriteAsync("Token has been logged out.");
+            return;
+        }
+    }
+
+    await next();
+});
+
 app.UseAuthorization();
+
 
 
 //bug: earlier the ratelimiting was not working due to: app.MapControllers(); exists only.
