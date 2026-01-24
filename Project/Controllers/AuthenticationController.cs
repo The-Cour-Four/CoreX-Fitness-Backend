@@ -21,7 +21,7 @@ namespace Project.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
-        public static HashSet<string> _tokenBlackList=HashSet<string>();
+        public static HashSet<string> _tokenBlackList = new HashSet<string>();
         //injecting the datacontext so we can communicate with the database
         public AuthenticationController(ApplicationDbContext context, IConfiguration configuration)
         {
@@ -94,7 +94,7 @@ namespace Project.Controllers
             // Add token to blacklist
             if (!string.IsNullOrEmpty(token))
             {
-                _tokenBlacklist.Add(token);
+                _tokenBlackList.Add(token);
             }
 
             return Ok("You have been logged out successfully.");
