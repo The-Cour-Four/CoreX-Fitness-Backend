@@ -130,6 +130,30 @@ namespace Project.Controllers
                 return Ok();
         }
 
+        [HttpGet("getUserInfo")]
+        [Authorize]
+        public async Task<IActionResult> GetUserInfo(){
+            
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim is null || !int.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized("Invalid token.");
+// fetching user from database
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (user is null)
+                return NotFound("user not found");
+
+            return Ok(new
+            {
+            id = user.Id,
+            name = user.Name,
+            email = user.Email,
+            weight = user.Weight,
+            height = user.Height,
+            age = user.Age,
+            creationDate = user.creationDate
+        });
+    }
+
 
         [HttpPost("updateUserInformation")]
         public async Task<IActionResult> updateUserInformation(UpdateUserInformationDTO request) 
