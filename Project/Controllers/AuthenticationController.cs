@@ -21,6 +21,7 @@ namespace Project.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        public static HashSet<string> _tokenBlackList=HashSet<string>();
         //injecting the datacontext so we can communicate with the database
         public AuthenticationController(ApplicationDbContext context, IConfiguration configuration)
         {
@@ -81,6 +82,22 @@ namespace Project.Controllers
             string token = CreateToken(user);
 
             return Ok(new { token = token });
+        }
+        
+        [HttpPost("logout")]
+        [Authorize]
+        public IActionResult Logout()
+        {
+            // Get the token from the Authorization header
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
+
+            // Add token to blacklist
+            if (!string.IsNullOrEmpty(token))
+            {
+                _tokenBlacklist.Add(token);
+            }
+
+            return Ok("You have been logged out successfully.");
         }
 
         [HttpPost("forgotPassword")]
