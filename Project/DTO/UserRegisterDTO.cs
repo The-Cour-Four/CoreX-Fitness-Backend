@@ -1,4 +1,4 @@
-﻿namespace Project.DTO
+namespace Project.DTO
 {
     public class UserRegisterDTO
     {
@@ -9,5 +9,6 @@
         public float weight { get; set; }
         public float height { get; set; }
         public int age { get; set; }
+        public short gender { get; set; }
     }
 }

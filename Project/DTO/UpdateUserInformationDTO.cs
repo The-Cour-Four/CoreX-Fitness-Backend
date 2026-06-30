@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +15,6 @@ namespace Project.DTO
         public float weight { get; set; }
         public float height { get; set; }
         public int age { get; set; }
-        //public string gender { get; set; }
+        public short gender { get; set; }
     }
 }
