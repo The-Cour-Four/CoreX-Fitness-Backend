@@ -1,0 +1,1794 @@
+================================================================================
+                    COREX FITNESS - AI FEATURES MVP FRONTEND
+                              Documentation Guide
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Overview
+2. Prerequisites
+3. Page 1: AI Fitness Coach Chatbot
+4. Page 2: Exercise Recommendations
+5. Page 3: Motivation Email
+6. File Structure Summary
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+You have 3 new AI-powered API endpoints that require frontend pages:
+
++-------------------------+------------------------------------+--------+---------------+
+| Feature                 | Endpoint                           | Method | Auth Required |
++-------------------------+------------------------------------+--------+---------------+
+| AI Fitness Chatbot      | /api/Chat/ask                      | POST   | Yes (JWT)     |
+| Exercise Recommendations| /api/Exercise/recommendations      | POST   | Yes (JWT)     |
+| Motivation Email Send   | /api/Motivation/send               | POST   | Yes (JWT)     |
+| Motivation Preview      | /api/Motivation/preview            | GET    | Yes (JWT)     |
++-------------------------+------------------------------------+--------+---------------+
+
+BASE URL: https://corex-fitness-backend-btcjekajg6a2a7ex.francecentral-01.azurewebsites.net
+
+================================================================================
+2. PREREQUISITES
+================================================================================
+
+- User must be logged in (JWT token stored in localStorage)
+- After login, store the token:
+  
+  localStorage.setItem('jwtToken', response.token);
+
+- All API requests need this header:
+  
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+
+================================================================================
+3. PAGE 1: AI FITNESS COACH CHATBOT
+================================================================================
+
+DESCRIPTION:
+A chat interface where users can ask fitness-related questions and receive 
+personalized AI responses based on their profile (weight, height, age, BMI).
+
+-------------------------------------------------------------------------------
+API DETAILS
+-------------------------------------------------------------------------------
+
+Endpoint: POST /api/Chat/ask
+
+Headers:
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "message": "What exercises should I do to lose belly fat?"
+}
+
+Response (200 OK):
+{
+  "response": "Great question! Based on your BMI of 24.5...",
+  "timestamp": "2026-01-23T12:00:00.000Z"
+}
+
+Error Responses:
+- 400 Bad Request - Message is empty
+- 401 Unauthorized - Invalid/missing token
+- 404 Not Found - User not found
+
+-------------------------------------------------------------------------------
+HTML (chat.html)
+-------------------------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fitness Coach - CoreX Fitness</title>
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <h1>?? CoreX AI Coach</h1>
+            <p>Your personal AI fitness assistant</p>
+        </header>
+
+        <div class="chat-messages" id="chatMessages">
+            <!-- Welcome message -->
+            <div class="message bot-message">
+                <div class="message-avatar">???</div>
+                <div class="message-content">
+                    <p>Hi! I'm your CoreX AI Coach. Ask me anything about fitness, nutrition, or exercise!</p>
+                </div>
+            </div>
+            <!-- Messages will be dynamically added here -->
+        </div>
+
+        <div class="chat-input-container">
+            <form id="chatForm">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Ask about fitness, nutrition, exercises..." 
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" id="sendBtn">
+                    <span>Send</span>
+                </button>
+            </form>
+        </div>
+
+        <div class="suggested-questions">
+            <p>Try asking:</p>
+            <button class="suggestion-btn" data-question="What exercises help lose belly fat?">Belly fat exercises</button>
+            <button class="suggestion-btn" data-question="How many calories should I eat daily?">Daily calories</button>
+            <button class="suggestion-btn" data-question="What should I eat before a workout?">Pre-workout nutrition</button>
+            <button class="suggestion-btn" data-question="How can I build muscle?">Build muscle</button>
+        </div>
+    </div>
+
+    <script src="chat.js"></script>
+</body>
+</html>
+
+-------------------------------------------------------------------------------
+CSS (chat.css)
+-------------------------------------------------------------------------------
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.chat-container {
+    width: 100%;
+    max-width: 600px;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-height: 700px;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.chat-header h1 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.chat-header p {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    background: #f8f9fa;
+}
+
+.message {
+    display: flex;
+    gap: 10px;
+    max-width: 85%;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.bot-message {
+    align-self: flex-start;
+}
+
+.user-message {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.bot-message .message-avatar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.user-message .message-avatar {
+    background: #e9ecef;
+}
+
+.message-content {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.user-message .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.message-content p {
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.chat-input-container {
+    padding: 15px 20px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+#chatForm {
+    display: flex;
+    gap: 10px;
+}
+
+#messageInput {
+    flex: 1;
+    padding: 12px 18px;
+    border: 2px solid #e9ecef;
+    border-radius: 25px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#messageInput:focus {
+    border-color: #667eea;
+}
+
+#sendBtn {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#sendBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+#sendBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.suggested-questions {
+    padding: 10px 20px 15px;
+    background: white;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.suggested-questions p {
+    font-size: 0.8rem;
+    color: #6c757d;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.suggestion-btn {
+    padding: 6px 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.suggestion-btn:hover {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+/* Loading indicator */
+.typing-indicator {
+    display: flex;
+    gap: 5px;
+    padding: 10px;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #667eea;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .chat-container {
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+    }
+    
+    body {
+        padding: 0;
+    }
+}
+
+-------------------------------------------------------------------------------
+JAVASCRIPT (chat.js)
+-------------------------------------------------------------------------------
+
+const API_BASE_URL = 'https://corex-fitness-backend-btcjekajg6a2a7ex.francecentral-01.azurewebsites.net';
+
+// Get JWT token from localStorage (set after login)
+function getToken() {
+    return localStorage.getItem('jwtToken');
+}
+
+// Check if user is logged in
+function checkAuth() {
+    const token = getToken();
+    if (!token) {
+        alert('Please login first to use the AI Coach.');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Add message to chat
+function addMessage(content, isUser = false) {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar">${isUser ? '??' : '???'}</div>
+        <div class="message-content">
+            <p>${content}</p>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Show typing indicator
+function showTypingIndicator() {
+    const chatMessages = document.getElementById('chatMessages');
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'message bot-message';
+    typingDiv.id = 'typingIndicator';
+    
+    typingDiv.innerHTML = `
+        <div class="message-avatar">???</div>
+        <div class="message-content">
+            <div class="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Remove typing indicator
+function removeTypingIndicator() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
+
+// Send message to API
+async function sendMessage(message) {
+    if (!checkAuth()) return;
+    
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+    
+    // Add user message to chat
+    addMessage(message, true);
+    
+    // Show typing indicator
+    showTypingIndicator();
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/Chat/ask`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({ message: message })
+        });
+        
+        removeTypingIndicator();
+        
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('jwtToken');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to get response');
+        }
+        
+        const data = await response.json();
+        addMessage(data.response);
+        
+    } catch (error) {
+        removeTypingIndicator();
+        addMessage(`Sorry, I encountered an error: ${error.message}. Please try again.`);
+        console.error('Chat error:', error);
+    } finally {
+        sendBtn.disabled = false;
+    }
+}
+
+// Handle form submission
+document.getElementById('chatForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (message) {
+        sendMessage(message);
+        input.value = '';
+    }
+});
+
+// Handle suggestion buttons
+document.querySelectorAll('.suggestion-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const question = this.getAttribute('data-question');
+        document.getElementById('messageInput').value = question;
+        sendMessage(question);
+    });
+});
+
+// Check auth on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
+});
+
+================================================================================
+4. PAGE 2: EXERCISE RECOMMENDATIONS
+================================================================================
+
+DESCRIPTION:
+A form where users select their fitness goal and level, then receive a 
+personalized exercise plan generated by AI.
+
+-------------------------------------------------------------------------------
+API DETAILS
+-------------------------------------------------------------------------------
+
+Endpoint: POST /api/Exercise/recommendations
+
+Headers:
+  Authorization: Bearer <jwt_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "fitnessGoal": "weight loss",
+  "fitnessLevel": "beginner"
+}
+
+Valid Options:
+- fitnessGoal: "weight loss", "muscle gain", "endurance", "flexibility", "general fitness"
+- fitnessLevel: "beginner", "intermediate", "advanced"
+
+Response (200 OK):
+{
+  "fitnessGoal": "weight loss",
+  "fitnessLevel": "beginner",
+  "exercises": [
+    {
+      "name": "Walking",
+      "description": "Start with brisk walking for 20-30 minutes",
+      "muscleGroup": "Full body, cardiovascular",
+      "sets": 1,
+      "reps": 30,
+      "difficulty": "Easy"
+    },
+    {
+      "name": "Bodyweight Squats",
+      "description": "Stand with feet shoulder-width apart...",
+      "muscleGroup": "Quadriceps, Glutes, Hamstrings",
+      "sets": 3,
+      "reps": 12,
+      "difficulty": "Easy"
+    }
+  ],
+  "additionalTips": "Stay hydrated and maintain proper form...",
+  "weeklyFrequency": "3-4 times per week",
+  "estimatedDuration": "30-45 minutes per session"
+}
+
+-------------------------------------------------------------------------------
+HTML (exercise.html)
+-------------------------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercise Recommendations - CoreX Fitness</title>
+    <link rel="stylesheet" href="exercise.css">
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h1>?? AI Exercise Planner</h1>
+            <p>Get personalized workout recommendations based on your goals</p>
+        </header>
+
+        <!-- Selection Form -->
+        <div class="selection-card" id="selectionCard">
+            <h2>Tell us about your goals</h2>
+            
+            <div class="form-group">
+                <label>What's your fitness goal?</label>
+                <div class="option-buttons" id="goalOptions">
+                    <button class="option-btn" data-value="weight loss">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Weight Loss</span>
+                    </button>
+                    <button class="option-btn" data-value="muscle gain">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Muscle Gain</span>
+                    </button>
+                    <button class="option-btn" data-value="endurance">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Endurance</span>
+                    </button>
+                    <button class="option-btn" data-value="flexibility">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Flexibility</span>
+                    </button>
+                    <button class="option-btn" data-value="general fitness">
+                        <span class="option-icon">?</span>
+                        <span class="option-text">General Fitness</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>What's your fitness level?</label>
+                <div class="option-buttons" id="levelOptions">
+                    <button class="option-btn" data-value="beginner">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Beginner</span>
+                    </button>
+                    <button class="option-btn" data-value="intermediate">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Intermediate</span>
+                    </button>
+                    <button class="option-btn" data-value="advanced">
+                        <span class="option-icon">??</span>
+                        <span class="option-text">Advanced</span>
+                    </button>
+                </div>
+            </div>
+
+            <button class="generate-btn" id="generateBtn" disabled>
+                <span class="btn-text">Generate My Plan</span>
+                <span class="btn-loader" style="display: none;">
+                    <span class="spinner"></span>
+                    Generating...
+                </span>
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="results-header">
+                <h2>Your Personalized Exercise Plan</h2>
+                <button class="new-plan-btn" id="newPlanBtn">Create New Plan</button>
+            </div>
+
+            <div class="plan-summary" id="planSummary">
+                <!-- Filled by JS -->
+            </div>
+
+            <div class="exercises-grid" id="exercisesGrid">
+                <!-- Exercise cards filled by JS -->
+            </div>
+
+            <div class="tips-section" id="tipsSection">
+                <!-- Tips filled by JS -->
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p>Creating your personalized plan...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="exercise.js"></script>
+</body>
+</html>
+
+-------------------------------------------------------------------------------
+CSS (exercise.css)
+-------------------------------------------------------------------------------
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.page-header {
+    text-align: center;
+    color: white;
+    padding: 30px 0;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.page-header p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.selection-card {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.selection-card h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 1.1rem;
+}
+
+.option-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.option-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.option-btn:hover {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.option-btn.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.option-icon {
+    font-size: 1.5rem;
+}
+
+.option-text {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.generate-btn {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 10px;
+}
+
+.generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Results Section */
+.results-section {
+    margin-top: 30px;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.results-header h2 {
+    color: white;
+    font-size: 1.5rem;
+}
+
+.new-plan-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.new-plan-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.plan-summary {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.summary-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.summary-item .label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.summary-item .value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.exercises-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.exercise-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+}
+
+.exercise-card:hover {
+    transform: translateY(-5px);
+}
+
+.exercise-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.exercise-number {
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.exercise-card p {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+.exercise-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.meta-tag {
+    padding: 5px 10px;
+    background: #f0f0ff;
+    color: #667eea;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.difficulty-tag {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.difficulty-tag.easy { background: #d4edda; color: #155724; }
+.difficulty-tag.medium { background: #fff3cd; color: #856404; }
+.difficulty-tag.hard { background: #f8d7da; color: #721c24; }
+
+.tips-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+}
+
+.tips-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tips-section p {
+    color: #666;
+    line-height: 1.7;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-content {
+    text-align: center;
+    color: white;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+.loading-content p {
+    font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .option-btn {
+        min-width: calc(50% - 10px);
+    }
+    
+    .results-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+}
+
+-------------------------------------------------------------------------------
+JAVASCRIPT (exercise.js)
+-------------------------------------------------------------------------------
+
+const API_BASE_URL = 'https://corex-fitness-backend-btcjekajg6a2a7ex.francecentral-01.azurewebsites.net';
+
+let selectedGoal = null;
+let selectedLevel = null;
+
+// Get JWT token from localStorage
+function getToken() {
+    return localStorage.getItem('jwtToken');
+}
+
+// Check authentication
+function checkAuth() {
+    const token = getToken();
+    if (!token) {
+        alert('Please login first to get exercise recommendations.');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// Handle option selection
+function setupOptionButtons() {
+    // Goal options
+    document.querySelectorAll('#goalOptions .option-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#goalOptions .option-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedGoal = this.getAttribute('data-value');
+            updateGenerateButton();
+        });
+    });
+
+    // Level options
+    document.querySelectorAll('#levelOptions .option-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('#levelOptions .option-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedLevel = this.getAttribute('data-value');
+            updateGenerateButton();
+        });
+    });
+}
+
+// Update generate button state
+function updateGenerateButton() {
+    const generateBtn = document.getElementById('generateBtn');
+    generateBtn.disabled = !(selectedGoal && selectedLevel);
+}
+
+// Generate exercise plan
+async function generatePlan() {
+    if (!checkAuth()) return;
+    if (!selectedGoal || !selectedLevel) return;
+
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    
+    // Show loading
+    generateBtn.querySelector('.btn-text').style.display = 'none';
+    generateBtn.querySelector('.btn-loader').style.display = 'inline';
+    generateBtn.disabled = true;
+    loadingOverlay.style.display = 'flex';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/Exercise/recommendations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
+            body: JSON.stringify({
+                fitnessGoal: selectedGoal,
+                fitnessLevel: selectedLevel
+            })
+        });
+
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('jwtToken');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        const data = await response.json();
+        displayResults(data);
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to generate plan. Please try again.');
+    } finally {
+        generateBtn.querySelector('.btn-text').style.display = 'inline';
+        generateBtn.querySelector('.btn-loader').style.display = 'none';
+        generateBtn.disabled = false;
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+// Display results
+function displayResults(data) {
+    document.getElementById('selectionCard').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+
+    // Plan Summary
+    const planSummary = document.getElementById('planSummary');
+    planSummary.innerHTML = `
+        <div class="summary-item">
+            <div class="label">Goal</div>
+            <div class="value">${capitalizeWords(data.fitnessGoal)}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Level</div>
+            <div class="value">${capitalizeWords(data.fitnessLevel)}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Frequency</div>
+            <div class="value">${data.weeklyFrequency || '3-4x/week'}</div>
+        </div>
+        <div class="summary-item">
+            <div class="label">Duration</div>
+            <div class="value">${data.estimatedDuration || '30-45 min'}</div>
+        </div>
+    `;
+
+    // Exercises Grid
+    const exercisesGrid = document.getElementById('exercisesGrid');
+    exercisesGrid.innerHTML = '';
+    
+    if (data.exercises && data.exercises.length > 0) {
+        data.exercises.forEach((exercise, index) => {
+            const difficultyClass = exercise.difficulty?.toLowerCase() || 'medium';
+            
+            exercisesGrid.innerHTML += `
+                <div class="exercise-card">
+                    <h3>
+                        <span class="exercise-number">${index + 1}</span>
+                        ${exercise.name}
+                    </h3>
+                    <p>${exercise.description}</p>
+                    <div class="exercise-meta">
+                        <span class="meta-tag">?? ${exercise.muscleGroup}</span>
+                        <span class="meta-tag">?? ${exercise.sets} sets × ${exercise.reps} reps</span>
+                        <span class="difficulty-tag ${difficultyClass}">${exercise.difficulty}</span>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    // Tips Section
+    const tipsSection = document.getElementById('tipsSection');
+    tipsSection.innerHTML = `
+        <h3>?? Tips & Recommendations</h3>
+        <p>${data.additionalTips || 'Remember to warm up before exercising and cool down afterward. Stay hydrated and listen to your body.'}</p>
+    `;
+}
+
+// Helper function
+function capitalizeWords(str) {
+    return str.replace(/\b\w/g, l => l.toUpperCase());
+}
+
+// Reset form
+function resetForm() {
+    selectedGoal = null;
+    selectedLevel = null;
+    
+    document.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('selectionCard').style.display = 'block';
+    document.getElementById('resultsSection').style.display = 'none';
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
+    setupOptionButtons();
+    
+    document.getElementById('generateBtn').addEventListener('click', generatePlan);
+    document.getElementById('newPlanBtn').addEventListener('click', resetForm);
+});
+
+================================================================================
+5. PAGE 3: MOTIVATION EMAIL
+================================================================================
+
+DESCRIPTION:
+A simple page where users can preview and send themselves an AI-generated 
+motivational email.
+
+-------------------------------------------------------------------------------
+API DETAILS
+-------------------------------------------------------------------------------
+
+Preview Endpoint: GET /api/Motivation/preview
+
+Headers:
+  Authorization: Bearer <jwt_token>
+
+Response (200 OK):
+{
+  "message": "<p>Hey Yousef! <strong>45 days</strong> into your fitness journey...</p>"
+}
+
+-------------------------------------------------------------------------------
+
+Send Email Endpoint: POST /api/Motivation/send
+
+Headers:
+  Authorization: Bearer <jwt_token>
+
+Response (200 OK):
+"Motivational email has been sent successfully!"
+
+-------------------------------------------------------------------------------
+HTML (motivation.html)
+-------------------------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motivation Boost - CoreX Fitness</title>
+    <link rel="stylesheet" href="motivation.css">
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h1>? Motivation Boost</h1>
+            <p>Get a personalized motivational message powered by AI</p>
+        </header>
+
+        <div class="motivation-card">
+            <div class="card-icon">??</div>
+            <h2>Need Some Motivation?</h2>
+            <p class="card-description">
+                Our AI will create a personalized motivational message just for you, 
+                based on your fitness journey and profile.
+            </p>
+
+            <div class="action-buttons">
+                <button class="btn btn-preview" id="previewBtn">
+                    <span class="btn-icon">???</span>
+                    Preview Message
+                </button>
+                <button class="btn btn-send" id="sendBtn">
+                    <span class="btn-icon">??</span>
+                    Send to My Email
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div class="modal-overlay" id="previewModal" style="display: none;">
+            <div class="modal-content">
+                <button class="modal-close" id="closeModal">&times;</button>
+                <h3>?? Your Motivational Message</h3>
+                <div class="email-preview">
+                    <div class="email-header">
+                        <div class="email-logo">CoreX Fitness</div>
+                        <div class="email-subject">Your Weekly Motivation ??</div>
+                    </div>
+                    <div class="email-body" id="previewContent">
+                        <!-- Content loaded by JS -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-send-modal" id="sendFromModal">
+                        Send This to My Email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Toast -->
+        <div class="toast" id="successToast">
+            <span class="toast-icon">?</span>
+            <span class="toast-message">Email sent successfully! Check your inbox.</span>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <script src="motivation.js"></script>
+</body>
+</html>
+
+-------------------------------------------------------------------------------
+CSS (motivation.css)
+-------------------------------------------------------------------------------
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 500px;
+}
+
+.page-header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.page-header p {
+    opacity: 0.9;
+}
+
+.motivation-card {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.card-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.motivation-card h2 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.card-description {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.btn {
+    padding: 15px 25px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+}
+
+.btn-preview {
+    background: #f8f9fa;
+    color: #333;
+    border: 2px solid #e9ecef;
+}
+
+.btn-preview:hover {
+    border-color: #667eea;
+    background: #f0f0ff;
+}
+
+.btn-send, .btn-send-modal {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-send:hover, .btn-send-modal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    animation: modalSlide 0.3s ease;
+}
+
+@keyframes modalSlide {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #999;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-content h3 {
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.email-preview {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.email-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+.email-logo {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.email-subject {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.email-body {
+    padding: 20px;
+    background: #f9f9f9;
+    color: #333;
+    line-height: 1.7;
+}
+
+.email-body p {
+    margin-bottom: 10px;
+}
+
+.modal-actions {
+    text-align: center;
+}
+
+.btn-send-modal {
+    width: 100%;
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #28a745;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    z-index: 1001;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Loading */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .motivation-card {
+        padding: 30px 20px;
+    }
+    
+    .page-header h1 {
+        font-size: 2rem;
+    }
+}
+
+-------------------------------------------------------------------------------
+JAVASCRIPT (motivation.js)
+-------------------------------------------------------------------------------
+
+const API_BASE_URL = 'https://corex-fitness-backend-btcjekajg6a2a7ex.francecentral-01.azurewebsites.net';
+
+function getToken() {
+    return localStorage.getItem('jwtToken');
+}
+
+function checkAuth() {
+    const token = getToken();
+    if (!token) {
+        alert('Please login first.');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function showToast(message) {
+    const toast = document.getElementById('successToast');
+    toast.querySelector('.toast-message').textContent = message;
+    toast.classList.add('show');
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+// Preview motivation message
+async function previewMessage() {
+    if (!checkAuth()) return;
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/Motivation/preview`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('jwtToken');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        
+        const data = await response.json();
+        
+        // Display in modal
+        document.getElementById('previewContent').innerHTML = data.message;
+        document.getElementById('previewModal').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to preview message. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Send motivation email
+async function sendEmail() {
+    if (!checkAuth()) return;
+    
+    showLoading();
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/Motivation/send`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getToken()}`
+            }
+        });
+        
+        if (response.status === 401) {
+            alert('Session expired. Please login again.');
+            localStorage.removeItem('jwtToken');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+        
+        // Close modal if open
+        document.getElementById('previewModal').style.display = 'none';
+        
+        // Show success
+        showToast('Motivational email sent successfully! Check your inbox. ??');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to send email. Please try again.');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('previewModal').style.display = 'none';
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
+    
+    document.getElementById('previewBtn').addEventListener('click', previewMessage);
+    document.getElementById('sendBtn').addEventListener('click', sendEmail);
+    document.getElementById('sendFromModal').addEventListener('click', sendEmail);
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    
+    // Close modal on overlay click
+    document.getElementById('previewModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+});
+
+================================================================================
+6. FILE STRUCTURE SUMMARY
+================================================================================
+
+Create these files in your frontend project:
+
+/frontend
+??? chat.html
+??? chat.css
+??? chat.js
+??? exercise.html
+??? exercise.css
+??? exercise.js
+??? motivation.html
+??? motivation.css
+??? motivation.js
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+1. AUTHENTICATION REQUIRED: 
+   All pages require the user to be logged in. 
+   Store the JWT token in localStorage after login:
+   
+   localStorage.setItem('jwtToken', response.token);
+
+2. BASE URL: 
+   Update API_BASE_URL in each JS file if your backend URL changes.
+
+3. ERROR HANDLING: 
+   Each page handles 401 errors by redirecting to login.
+
+4. MOBILE RESPONSIVE: 
+   All pages are responsive and work on mobile devices.
+
+5. RATE LIMITING:
+   Your backend has rate limiting (10 requests per minute).
+   Users may see errors if they make too many requests quickly.
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================
